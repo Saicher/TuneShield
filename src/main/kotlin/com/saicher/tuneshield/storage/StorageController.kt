@@ -1,4 +1,4 @@
-package com.saicher.tuneshield
+package com.saicher.tuneshield.storage
 
 import javafx.animation.*
 import javafx.application.Platform
@@ -7,25 +7,24 @@ import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Parent
 import javafx.scene.control.Label
-import javafx.scene.control.ListView
 import javafx.scene.control.ProgressIndicator
 import javafx.scene.effect.BlendMode
-import javafx.scene.effect.ColorAdjust
-import javafx.scene.image.Image
 import javafx.scene.image.ImageView
+import javafx.scene.layout.Priority
+import javafx.scene.layout.StackPane
 import javafx.scene.layout.TilePane
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.scene.text.Font
-import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import javafx.util.Duration
+import javafx.scene.media.Media
+import javafx.scene.media.MediaPlayer
+import java.net.URL
 
 class StorageController {
     @FXML
     lateinit var scannedPercentage: ProgressIndicator
-    @FXML
-    lateinit var elapsedTimeLabel: Label
     @FXML
     lateinit var folderPane: TilePane
     @FXML
@@ -33,6 +32,7 @@ class StorageController {
 
     val imageLoc = javaClass.getResource("/Images/folder.png")
     val font = Font.loadFont(javaClass.getResource("/Fonts/Inter-Bold.otf")?.toString(), 20.0)
+    val sndScanComplete = javaClass.getResource("/Sounds/scan_complete.wav")
 
     private var targetProgress: Double = 0.0
     private val lerpSpeed: Double = 0.02  // Adjust this for faster/slower interpolation
@@ -64,10 +64,12 @@ class StorageController {
 
     fun updateElapsedTime(time: String) {
         Platform.runLater {
-            elapsedTimeLabel.text = time
+            // Got rid of Elapsed Time Label.
+            // Don't want to get rid of it in case I use-
+            // it for something else.
         }
     }
-    fun addFolderInfo(folderName: String, size: Double) {
+    fun addFolderInfo(folderName: String, size: Int) {
         Platform.runLater {
 
             // Folder Name Label:
@@ -75,7 +77,8 @@ class StorageController {
             folderLabel.font = font
             folderLabel.textFill = Color.WHITE
             folderLabel.textAlignment = TextAlignment.CENTER
-            folderLabel.alignment = Pos.TOP_CENTER
+            folderLabel.alignment = Pos.BOTTOM_CENTER
+
 
             // Folder Image:
             val imageView = ImageView(imageLoc.toString())
@@ -84,17 +87,27 @@ class StorageController {
 
             // Folder Size Label:
             val sizeLabel = Label(size.toString()+"%")
-            val normalized = Math.min(size / 60.0, 1.0)
+            val normalized = Math.min(size / 30.0, 1.0)
             val redValue = (normalized * 255).toInt()
             sizeLabel.font = font
             sizeLabel.textFill = Color.rgb(redValue, 0, 0)
             sizeLabel.textAlignment = TextAlignment.CENTER
             sizeLabel.alignment = Pos.CENTER
-            sizeLabel.padding = Insets(-220.0, 0.0, 0.0, 0.0)
-            sizeLabel.opacity = 0.5
+            //sizeLabel.padding = Insets(-220.0, 0.0, 0.0, 0.0)
+            sizeLabel.opacity = 0.75
 
-            val folderBox = VBox(imageView, folderLabel, sizeLabel)
+            val folderInfoPane = StackPane()
+            folderInfoPane.alignment = Pos.BOTTOM_CENTER
+            folderInfoPane.padding = Insets(0.0, 0.0, -40.0, 0.0)
+            folderInfoPane.children.addAll(folderLabel)
+
+            val nestedStackPane = StackPane()
+            nestedStackPane.alignment = Pos.CENTER
+            nestedStackPane.children.addAll(folderInfoPane, imageView, sizeLabel)
+
+            val folderBox = VBox(nestedStackPane)
             folderBox.alignment = Pos.CENTER
+
             setupVBoxHoverAnimation(folderBox)
             setupFlashOnVBoxClick(folderBox, imageView)
 
@@ -102,11 +115,11 @@ class StorageController {
             folderLabel.translateY = -30.0
             folderPane.requestLayout()
 
-            setupResizing(folderBox, folderPane, imageView, sizeLabel)
+            setupResizing(folderBox, folderPane, imageView, sizeLabel, folderLabel)
         }
     }
 
-    private fun setupResizing(vbox: VBox, tilePane: TilePane, imageView: ImageView, sizeLabel: Label) {
+    private fun setupResizing(vbox: VBox, tilePane: TilePane, imageView: ImageView, sizeLabel: Label, folderLabel: Label) {
 
         // Capture initial sizes
         val initialVBoxWidth = vbox.width
@@ -122,13 +135,22 @@ class StorageController {
             scale = kotlin.math.round(scale)
 
             vbox.prefWidth = initialVBoxWidth * scale
-            imageView.fitWidth = initialTileWidth * scale
+            imageView.prefWidth(initialTileWidth * scale)
             tilePane.prefTileWidth = initialTileWidth * scale
             tilePane.hgap = 60 * scale
 
+            imageView.scaleX = scale
+            imageView.scaleY = scale
+
             sizeLabel.scaleX = scale
             sizeLabel.scaleY = scale
-            sizeLabel.padding = Insets((initialTileHeight / scale) * -scale, 0.0, 0.0, 0.0)
+
+            folderLabel.scaleX = scale
+            folderLabel.scaleY = scale
+
+            //sizeLabel.scaleX = scale
+            //sizeLabel.scaleY = scale
+            //sizeLabel.padding = Insets((initialTileWidth / scale) * -scale, 0.0, 0.0, 0.0)
 
             tilePane.requestLayout()
         }
@@ -138,13 +160,20 @@ class StorageController {
             scale = kotlin.math.round(scale)
 
             vbox.prefHeight = initialVBoxHeight * scale
-            imageView.fitHeight = initialTileHeight * scale
+            //imageView.fitHeight = initialTileHeight * scale
+            imageView.prefHeight(initialTileHeight * scale)
             tilePane.prefTileHeight = initialTileHeight * scale
             tilePane.vgap = 60 * scale
 
+            imageView.scaleX = scale
+            imageView.scaleY = scale
+
             sizeLabel.scaleX = scale
             sizeLabel.scaleY = scale
-            sizeLabel.padding = Insets((initialTileHeight / scale) * -scale, 0.0, 0.0, 0.0)
+
+            //sizeLabel.scaleX = scale
+            //sizeLabel.scaleY = scale
+            //sizeLabel.padding = Insets((initialTileHeight / scale) * -scale, 0.0, 0.0, 0.0)
 
             tilePane.requestLayout()
         }
@@ -155,13 +184,16 @@ class StorageController {
         fadeTransition.fromValue = 1.0
         fadeTransition.toValue = 0.0
         fadeTransition.setOnFinished {
+
+            // Display the results
             scannedPercentage.isVisible = false
-            elapsedTimeLabel.isVisible = true
             folderPane.isVisible = true
             scannedPercentage.progress = 0.0
 
             val vBoxes = folderPane.children.filterIsInstance<VBox>()
             animateVBoxesIntoPosition(vBoxes)
+
+            playSound(sndScanComplete)
         }
         fadeTransition.play()
     }
@@ -221,5 +253,12 @@ class StorageController {
 
             transition.play()
         }
+    }
+
+    fun playSound(soundUrl: URL) {
+        val media = Media(soundUrl.toString())
+        val mediaPlayer = MediaPlayer(media)
+        mediaPlayer.play()
+        println(soundUrl.toString())
     }
 }

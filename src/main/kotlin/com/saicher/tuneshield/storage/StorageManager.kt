@@ -1,7 +1,9 @@
-package com.saicher.tuneshield
+package com.saicher.tuneshield.storage
 
 import java.io.File
 import java.io.IOException
+import kotlin.math.roundToInt
+
 class StorageManager(private val controller: StorageController) {
 
     fun runStorageScript() {
@@ -24,6 +26,7 @@ class StorageManager(private val controller: StorageController) {
 
         val processBuilder = ProcessBuilder()
         processBuilder.command("cmd.exe", "/c", command)
+
         // Redirect error stream to standard output
         processBuilder.redirectErrorStream(true)
 
@@ -57,10 +60,8 @@ class StorageManager(private val controller: StorageController) {
             // Show the Results:
             controller.updateElapsedTime("Time Taken: $elapsedTime")
             size.forEachIndexed { index, size ->
-                controller.addFolderInfo(folderNames[index], size)
+                controller.addFolderInfo(folderNames[index], size.roundToInt())
             }
-
-
 
             // Wait for the process to exit
             val exitCode = process.waitFor()

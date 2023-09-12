@@ -1,6 +1,10 @@
 # Determine the root path based on the OS
 $rootPath = if ($PSVersionTable.Platform -eq "Unix") { "/" } else { [System.IO.Path]::GetPathRoot($env:SystemRoot) }
 
+param (
+    [string]$startPath = $rootPath
+)
+
 # Make sure the script is running on PowerShell 7 or later
 $majorVersion = $PSVersionTable.PSVersion.Major
 
@@ -50,7 +54,7 @@ function Get-FolderSize {
 if ($host.UI.RawUI -and $host.UI.RawUI.SupportsVirtualTerminal) { Clear-Host }
 
 # Get all top-level folders on the root path
-$folders = Get-ChildItem -Path $rootPath -Directory -ErrorAction SilentlyContinue
+$folders = Get-ChildItem -Path $startPath -Directory -ErrorAction SilentlyContinue
 $throttleLimit = [Environment]::ProcessorCount
 
 # Get the total number of folders

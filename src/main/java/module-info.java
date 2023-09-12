@@ -5,7 +5,8 @@ module com.saicher.tuneshield {
     
         requires org.controlsfx.controls;
                         requires org.kordamp.bootstrapfx.core;
-            
+    requires javafx.media;
+
     opens com.saicher.tuneshield to javafx.fxml;
     exports com.saicher.tuneshield;
 }
